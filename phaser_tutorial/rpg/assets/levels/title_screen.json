@@ -1,0 +1,34 @@
+{
+  "assets": {
+    "background_image": {"type": "image", "source": "assets/images/battle/background.png"},
+    "button_image": {"type": "spritesheet", "source": "assets/images/battle/bat.png", "frameWidth": 121, "frameHeight": 89, "frames": 20, "margin": 0, "spacing": 0}
+  },
+  "groups": [
+      "background", "texts"
+    ]
+  },
+  "sprites": {
+    "background": {
+      "type": "sprite",
+      "position": {"x": 0, "y":0},
+      "texture": "background_image",
+      "group": "background"
+    },
+    "title_message": {
+      "type": "text",
+      "position": {"x": 320, "y": 200},
+      "style": {"font": "65px kells", "fill": "#990000"},
+      "text": "Phaser RPG",
+      "anchor": 0.5,
+      "group": "texts"
+    },
+    "start_message": {
+      "type": "text",
+      "position": {"x": 320, "y": 400},
+      "style": {"font": "24px kells", "fill": "#000099"},
+      "text": "click to play game",
+      "anchor": 0.5,
+      "group": "texts"
+    }
+  }
+}

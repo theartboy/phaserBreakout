@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<link rel="icon"  type="image/x-icon" href="assets/uni.ico">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+	<title>Phaser - Breakout</title>
+	<script type="text/javascript" src="js/phaser.2.9.1.min.js"></script>
+	<style type="text/css">
+		body {
+			margin: 0;
+			background-color: #666;
+		}
+
+		canvas {
+			margin: auto;
+		}
+	</style>
+</head>
+
+<body>
+
+	<script type="text/javascript">
+		var game = new Phaser.Game(532, 800, Phaser.AUTO, 'breakout', {
+			// var game = new Phaser.Game(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio, Phaser.CANVAS, '', {
+			preload: preload,
+			create: create,
+			update: update
+		});
+
+
+		var paddle1;
+
+		var ball;
+		var ballLaunched;
+		var ballVelocity;
+		var pv1, ov1;
+
+		var scoreText, livesText;
+		var score, lives, maxScore;
+
+		var launchDirection, ballInPlay;
+
+		var bars;
+		var bottomBar, junkBar;
+
+		function preload() {
+			game.load.image('paddle', 'assets/breakoutPaddle.png');
+			game.load.image('bar', 'assets/breakoutBar.png');
+			game.load.image('ball', 'assets/pongBall.png');
+			game.load.image('bottomBar', 'assets/bottomBar.png');
+
+			game.load.bitmapFont('font', 'assets/font/font.png', 'assets/font/font.xml');
+			//
+			game.load.audio('hit1', ['assets/pong.ogg', 'assets/pong.wav', 'assets/pong.mp3']);
+
+			game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+			game.pageAlignHorizontally = true;
+			game.pageAlignVertically = true;
+			game.scale.setResizeCallback(function() {
+
+			});
+
+		}
+
+		function create() {
+			//need?
+			game.physics.startSystem(Phaser.Physics.ARCADE);
+
+			bars = game.add.group();
+			bars.enableBody = true;
+			createBars();
+
+			paddle1 = createPaddle(game.world.centerX, game.world.height - 108);
+
+			launchDirection = 1;
+			ballInPlay = false;
+			ballLaunched = false;
+			ballVelocity = 400;
+			ball = createBall(game.world.centerX, game.world.height * 0.5);
+
+			game.input.onDown.add(launchBall, this);
+
+			ov1 = 0; //end update paddle velocity y
+			pv1 = 0; //start update paddle velocity y
+
+			//web font method
+			// scoreText = game.add.text(5,5, 'Score: 0', {font: '48px Courier', fill: '#ffffff', align: 'left'});
+			// livesText = game.add.text(game.world.width-5,5, 'Lives: 3', {font: '48px Courier', fill: '#ffffff', align: 'right'});
+			// livesText.anchor.setTo(1,0);
+			//bitmamp font method
+			scoreText = game.add.bitmapText(5, 15, 'font', 'Score: 0', 48);
+			livesText = game.add.bitmapText(game.world.width - 5, 15, 'font', 'Lives: 3', 48);
+			livesText.anchor.setTo(1, 0);
+
+			score = 0;
+			lives = 3;
+
+			bottomBar = game.add.sprite(0, game.world.height-100, 'bottomBar');
+			bottomBar.anchor.setTo(0,0);
+			game.physics.arcade.enable(bottomBar);
+			bottomBar.body.collideWorldBounds = true;
+			bottomBar.body.immovable = true;
+			// bottomBar.scale.setTo(5,3.1);
+
+		}
+
+		function update() {
+			controlPaddle(paddle1, game.input.x);
+			// controlPaddle(paddle2, game.input.y);
+			// paddle2.body.velocity.y = ball.body.velocity.y;
+			pv1 = paddle1.x;
+			game.physics.arcade.collide(paddle1, ball, function() {
+				// game.sound.play('hit1');
+				ball.body.velocity.x += (pv1 - ov1) * 10;
+			});
+
+			//missed ball generates score
+			game.physics.arcade.collide(bottomBar, ball, function() {
+				console.log('ball out of bounds');
+				lives--;
+				if (lives == 0) {
+					resetGame();
+				} else {
+					ballInPlay = false;
+					launchBall();
+				}
+			});
+			// if (ball.body.blocked.down) {
+			// 	console.log('ball out of bounds');
+			// 	lives--;
+			// 	if (lives == 0) {
+			// 		resetGame();
+			// 	} else {
+			// 		ballInPlay = false;
+			// 		launchBall();
+			// 	}
+			// }
+			game.physics.arcade.collide(ball, bars, breakBar, null, this);
+			// game.physics.arcade.overlap(ball, bars, breakBar, null, this);
+
+			ov1 = paddle1.x;
+			scoreText.text = "Score: " + score;
+			livesText.text = "Lives: " + lives;
+		}
+
+		function resetGame() {
+			ballInPlay = false;
+			bars.destroy(true,true);//detroys all remaining children. keeps group through soft destroy
+			//kill works best with object pools
+			//destroy removes the object so it can be recreated.
+			launchBall();
+			createBars();
+			score = 0;
+			lives = 3;
+		}
+
+		function breakBar(ball, bar) {
+			bar.destroy();
+			score++;
+			console.log(bars.countLiving() + "  max:" + maxScore);
+			if (score == maxScore) {
+				resetGame();
+			}
+		}
+
+		function createBars() {
+			for (var i = 0; i < 2; i++) {
+				for (var j = 0; j < 4; j++) {
+					var bar = bars.create((4 + j * 132), (100 + i * 36), 'bar');
+					bar.body.immovable = true;
+				}
+			}
+			maxScore = bars.countLiving();
+		}
+		//use a create function because there are more than one of the same type, kind of like a factory
+		function createPaddle(x, y) {
+			var paddle = game.add.sprite(x, y, 'paddle');
+			paddle.anchor.setTo(0.5, 0.5);
+			game.physics.arcade.enable(paddle);
+			paddle.body.collideWorldBounds = true;
+			paddle.body.immovable = true;
+
+			paddle.scale.setTo(0.5);
+
+			return paddle;
+		}
+
+		function controlPaddle(paddle, x) {
+			paddle.x = x;
+			if (paddle.x < paddle.width / 2) {
+				paddle.x = paddle.width / 2;
+			} else if (paddle.x > game.world.width - paddle.width / 2) {
+				paddle.x = game.world.width - paddle.width / 2
+			}
+		}
+
+		function createBall(x, y) {
+			var ball = game.add.sprite(x, y, 'ball');
+			ball.anchor.setTo(0.5, 0.5);
+			game.physics.arcade.enable(ball);
+			ball.body.collideWorldBounds = true;
+			ball.body.bounce.setTo(1, 1);
+
+			return ball;
+		}
+
+		function launchBall() {
+			if (!ballInPlay) {
+				if (ballLaunched) {
+					ballVelocity = 400;
+					ball.x = game.world.centerX;
+					ball.y = game.world.height * 0.5;
+					ball.body.velocity.setTo(0, 0);
+					ballLaunched = false;
+				} else {
+					ball.body.velocity.x = -ballVelocity * launchDirection;
+					ball.body.velocity.y = ballVelocity;
+					ballLaunched = true;
+					ballInPlay = true;
+				}
+
+			}
+		}
+	</script>
+
+</body>
+
+</html>

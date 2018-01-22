@@ -1,0 +1,28 @@
+Basic Phaser Platform demo
+The three core Phaser functions are preload, create, and update.
+For a single state game, init the game var and then other vars the game will require.
+In the create individual elements and groups are added.
+Using a group creates an array of objects that share similar properties.
+To allow objects to use physics, you must enableBody
+for input with keyboard use the game.input.keyboard.createCursorKeys()
+Collide will bounce objects off each other. It supports a callback method.
+Overlap is used for collision when something doesn't need to bounce of the other.
+velocity is a vector that has x and y values
+with the physics body touching.down means the bottom of the object is touching another physics enabled body. great for platform games.
+group.kill() removes the object from the group array
+use countLiving and countDead to determine the remaining elements in the group.
+making breakout required moving the user control up to allow for touch to cover screen
+when adding the bars to breakout I didn't reset them between rounds
+using kill() removes them from screen but they are still in the object pool
+using destroy() removes them completely.
+The breakout bars group needed to be emptied between rounds or it added the new bars over the previous
+so it became an issue if you died instead of completing the round
+webfont vs bitmap fonts. webfonts are limited to the device fonts
+bitmap font generator http://kvazars.com/littera/ * requires flash
+start with single screen projects
+add states to separate code into logical pieces
+passing data between game states can be through local localStorage
+data is stored in key value pairs
+the level data can also be stored in the game cache which can be loaded and then accessed in each game state
+passing the data to the game state makes it available in the init method of the state
+load the data in the init and then use it in the rest of the state.

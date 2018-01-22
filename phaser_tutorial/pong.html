@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<title>Phaser - Pong</title>
+	<script type="text/javascript" src="js/phaser.2.9.1.min.js"></script>
+	<!-- based on the tutorial vids from https://www.youtube.com/channel/UCv0j-6tXIlnxmOu9FA3qFtw/about -->
+	<style type="text/css">
+		body {
+			margin: 0;
+			background-color:#666;
+		}
+		canvas{
+			margin:auto;
+		}
+	</style>
+</head>
+
+<body>
+
+	<script type="text/javascript">
+	var game = new Phaser.Game(800, 600, Phaser.AUTO, 'pongGame', {
+		// var game = new Phaser.Game(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio, Phaser.CANVAS, '', {
+			preload: preload,
+			create: create,
+			update: update
+		});
+
+
+		var paddle1;
+		var paddle2;
+
+		var ball;
+		var ballLaunched;
+		var ballVelocity;
+		var pv1, ov2, pv2, ov2;
+
+		var score1Text, score2Text;
+		var score1, score2;
+
+		var launchDirection, ballInPlay;
+
+		function preload() {
+			game.load.image('paddle', 'assets/pongPaddle.png');
+			game.load.image('ball', 'assets/pongBall.png');
+
+			// game.load.bitmapFont('font', 'assets/font/font.png', 'assets/font/font.xml');
+      //
+			game.load.audio('hit1',['assets/pong.ogg','assets/pong.wav', 'assets/pong.mp3']);
+			game.load.audio('hit2',['assets/pong.ogg','assets/pong.wav', 'assets/pong.mp3']);
+
+			game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+			game.pageAlignHorizontally = true;
+			game.pageAlignVertically = true;
+			  game.scale.setResizeCallback(function() {
+					// game.scale.refresh();
+			    // game.scale.setMaximum();
+					// paddle2.x = game.world.width-8;
+					// paddle2.y = game.world.centerY;
+					// paddle1.y = game.world.centerY;
+					// ball.x = game.world.centerX;
+					// ball.y = game.world.centerY;
+			  });
+
+	}
+
+		function create() {
+			console.log(window.devicePixelRatio);
+			paddle1 = createPaddle(0, game.world.centerY);
+			paddle2 = createPaddle(game.world.width-8, game.world.centerY);
+
+			launchDirection = 1;
+			ballInPlay = false;
+			ballLaunched = false;
+			ballVelocity = 400;
+			ball = createBall(game.world.centerX, game.world.centerY);
+
+			game.input.onDown.add(launchBall, this);
+
+			ov1 = 0;//end update paddle velocity y
+			pv1 = 0;//start update paddle velocity y
+			ov2 = 0;//end update paddle velocity y
+			pv2 = 0;//start update paddle velocity y
+
+			//web font method
+			score1Text = game.add.text(128,128, '0', {font: '64px Courier', fill: '#ffffff', align: 'center'});
+			score2Text = game.add.text(game.world.width-128,128, '0', {font: '64px Courier', fill: '#ffffff', align: 'center'});
+
+			//bitmamp font method
+			// score1Text = game.add.bitmapText(128,128,'font', '0', 72);
+			// score2Text = game.add.bitmapText(game.world.width - 128,128,'font', '0', 72);
+			score1=0;
+			score2=0;
+		}
+
+		function update() {
+			controlPaddle(paddle1, game.input.y);
+			// controlPaddle(paddle2, game.input.y);
+			// paddle2.body.velocity.y = ball.body.velocity.y;
+			pv1 = paddle1.y;
+			pv2 = paddle2.y;
+			game.physics.arcade.collide(paddle1,ball, function(){
+				game.sound.play('hit1');
+				ball.body.velocity.y += (pv1-ov1)*10;
+			});
+			game.physics.arcade.collide(paddle2,ball, function(){
+				game.sound.play('hit2');
+				ball.body.velocity.y += (pv2-ov2)*10;
+		});
+			// if(game.physics.arcade.collide(paddle1,ball)){
+			// 	ball.body.velocity.y += (pv1-ov1)*10;
+			// }
+			// if(game.physics.arcade.collide(paddle2,ball)){
+			// 	ball.body.velocity.y += (pv2-ov2)*10;
+			// }
+
+			//missed ball generates score
+			if (ball.body.blocked.left){
+				console.log('player 2 scores');
+				score2 ++;
+				launchDirection = 1;
+				ballInPlay = false;
+				launchBall();
+			}else if (ball.body.blocked.right){
+				console.log('player 1 scores');
+				score1 ++;
+				launchDirection = -1;
+				ballInPlay = false;
+				launchBall();
+			}
+			paddle2.body.velocity.setTo(0, ball.body.velocity.y);
+			paddle2.body.maxVelocity.y = 250;
+
+			ov1 = paddle1.y;
+			ov2 = paddle2.y;
+			score1Text.text = score1;
+			score2Text.text = score2;
+		}
+		//use a create function because there are more than one of the same type, kind of like a factory
+		function createPaddle(x,y){
+			var paddle = game.add.sprite(x,y,'paddle');
+			paddle.anchor.setTo(0.5,0.5);
+			game.physics.arcade.enable(paddle);
+			paddle.body.collideWorldBounds = true;
+			paddle.body.immovable = true;
+
+			paddle.scale.setTo(0.5);
+
+			return paddle;
+		}
+
+		function controlPaddle(paddle, y){
+			paddle.y = y;
+			if(paddle.y < paddle.height/2){
+				paddle.y = paddle.height/2;
+			}else if (paddle.y > game.world.height - paddle.height/2){
+				paddle.y = game.world.height - paddle.height/2
+			}
+		}
+
+		function createBall(x,y){
+			var ball = game.add.sprite(x,y,'ball');
+			ball.anchor.setTo(0.5,0.5);
+			game.physics.arcade.enable(ball);
+			ball.body.collideWorldBounds = true;
+			ball.body.bounce.setTo(1,1);
+
+			return ball;
+		}
+
+		function launchBall(){
+			if (!ballInPlay){
+				if(ballLaunched){
+					ballVelocity = 400;
+					ball.x = game.world.centerX;
+					ball.y = game.world.centerY;
+					ball.body.velocity.setTo(0,0);
+					ballLaunched = false;
+					paddle2.y = game.world.centerY;
+				}else{
+					ball.body.velocity.x = -ballVelocity * launchDirection;
+					ball.body.velocity.y = ballVelocity;
+					ballLaunched = true;
+					ballInPlay = true;
+				}
+
+			}
+		}
+
+
+	</script>
+
+</body>
+
+</html>
